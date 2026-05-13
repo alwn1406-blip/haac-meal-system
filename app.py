@@ -1,24 +1,22 @@
 import streamlit as st
 import gspread
+import json
 from google.oauth2.service_account import Credentials
 from datetime import datetime, date
 
 st.set_page_config(page_title="HAAC 현장 식수 신청 시스템", layout="wide")
 
 # =========================
-# 구글시트 연결 (Secrets 사용)
+# 구글시트 연결
 # =========================
 scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
-service_account_info = dict(st.secrets["gcp_service_account"])
-
-# private_key 줄바꿈 처리
-service_account_info["private_key"] = service_account_info[
-    "private_key"
-].replace("\\n", "\n")
+service_account_info = json.loads(
+    st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"]
+)
 
 creds = Credentials.from_service_account_info(
     service_account_info,
@@ -93,13 +91,11 @@ employee_data = {
         {"이름": "신종훈", "직책": "사원"},
         {"이름": "조명희", "직책": "사원"},
     ],
-
     "전장(자재)": [
         {"이름": "김경욱", "직책": "팀장"},
         {"이름": "배재석", "직책": "사원"},
         {"이름": "조문규", "직책": "사원"},
     ],
-
     "준우": [
         {"이름": "조한주", "직책": "사장"},
         {"이름": "허경아", "직책": "사원"},
@@ -107,7 +103,6 @@ employee_data = {
         {"이름": "이진수", "직책": "사원"},
         {"이름": "전창규", "직책": "사원"},
     ],
-
     "삼보": [
         {"이름": "박소영", "직책": "사장"},
         {"이름": "채수복", "직책": "사원"},
@@ -116,19 +111,16 @@ employee_data = {
         {"이름": "허정란", "직책": "대리"},
         {"이름": "김민정", "직책": "사원"},
     ],
-
     "더원": [
         {"이름": "이상헌", "직책": "사장"},
         {"이름": "양현성", "직책": "반장"},
         {"이름": "황성근", "직책": "기사"},
         {"이름": "김병규", "직책": "기사"},
     ],
-
     "TOP": [
         {"이름": "허재열", "직책": "사장"},
         {"이름": "허문성", "직책": "차장"},
     ],
-
     "ATS": [
         {"이름": "강종대", "직책": "팀장"},
         {"이름": "김종권", "직책": "이사"},
@@ -149,24 +141,15 @@ st.markdown("# 🍽️ HAAC 현장 식수 신청 시스템")
 col_date, col_group = st.columns(2)
 
 with col_date:
-    meal_date = st.date_input(
-        "식사 일자 선택",
-        value=date.today()
-    )
+    meal_date = st.date_input("식사 일자 선택", value=date.today())
 
 with col_group:
-    selected_group = st.selectbox(
-        "소속팀 선택",
-        groups
-    )
+    selected_group = st.selectbox("소속팀 선택", groups)
 
 st.markdown(f"## 👥 {selected_group} 명단")
 
 people = employee_data[selected_group]
 
-# =========================
-# 전체 선택
-# =========================
 col_all1, col_all2, col_blank = st.columns([1, 1, 4])
 
 with col_all1:
@@ -181,48 +164,26 @@ with col_all2:
         key=f"{selected_group}_all_dinner"
     )
 
-# =========================
-# 표 헤더
-# =========================
 h1, h2, h3, h4, h5 = st.columns([1.5, 1.5, 1.5, 1, 1])
 
 with h1:
-    st.markdown(
-        '<div class="header-row">소속</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="header-row">소속</div>', unsafe_allow_html=True)
 
 with h2:
-    st.markdown(
-        '<div class="header-row">직책</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="header-row">직책</div>', unsafe_allow_html=True)
 
 with h3:
-    st.markdown(
-        '<div class="header-row">이름</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="header-row">이름</div>', unsafe_allow_html=True)
 
 with h4:
-    st.markdown(
-        '<div class="header-row">중식</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="header-row">중식</div>', unsafe_allow_html=True)
 
 with h5:
-    st.markdown(
-        '<div class="header-row">석식</div>',
-        unsafe_allow_html=True
-    )
+    st.markdown('<div class="header-row">석식</div>', unsafe_allow_html=True)
 
-# =========================
-# 데이터 입력
-# =========================
 result_rows = []
 
 for idx, person in enumerate(people):
-
     c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1, 1])
 
     with c1:
@@ -258,7 +219,6 @@ for idx, person in enumerate(people):
         )
 
     if lunch or dinner:
-
         result_rows.append({
             "입력시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "날짜": str(meal_date),
@@ -272,17 +232,13 @@ for idx, person in enumerate(people):
 st.divider()
 
 # =========================
-# 제출
+# 제출 → 구글시트 저장
 # =========================
 if st.button("제출"):
-
     if not result_rows:
         st.error("체크된 인원이 없어.")
-
     else:
-
         for row in result_rows:
-
             sheet.append_row([
                 row["입력시간"],
                 row["날짜"],
