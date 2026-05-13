@@ -126,7 +126,7 @@ employee_data = {
     ],
 }
 
-direct_groups = ["전장", "전장(자재)"]
+direct_groups = ["전장"]
 vendor_groups = ["준우", "삼보", "더원", "TOP", "ATS"]
 groups = direct_groups + vendor_groups
 
