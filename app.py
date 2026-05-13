@@ -3,6 +3,9 @@ import gspread
 import json
 from google.oauth2.service_account import Credentials
 from datetime import datetime, date
+import pandas as pd
+from io import BytesIO
+from datetime import timedelta
 
 st.set_page_config(page_title="HAAC 현장 식수 신청 시스템", layout="wide")
 
@@ -390,4 +393,56 @@ elif mode == "관리자":
     st.markdown("## 🔒 관리자 모드")
     st.success("관리자 로그인 완료")
 
-    st.info("여기에 주간 엑셀 다운로드 기능이 추가될 예정입니다.")
+    st.markdown("### 📊 식수 집계 엑셀 다운로드")
+
+    start_date = st.date_input("시작일", value=date.today() - timedelta(days=7))
+    end_date = st.date_input("종료일", value=date.today())
+
+    if st.button("엑셀 생성"):
+
+        records = sheet.get_all_records()
+        df = pd.DataFrame(records)
+
+        if df.empty:
+            st.error("구글시트에 데이터가 없어.")
+        else:
+            df["날짜"] = pd.to_datetime(df["날짜"]).dt.date
+
+            filtered_df = df[
+                (df["날짜"] >= start_date) &
+                (df["날짜"] <= end_date)
+            ]
+
+            if filtered_df.empty:
+                st.error("선택한 기간에 데이터가 없어.")
+            else:
+                summary_df = filtered_df.copy()
+
+                summary_df["중식수"] = summary_df["중식"].apply(
+                    lambda x: 1 if x == "Y" else int(x) if str(x).isdigit() else 0
+                )
+
+                summary_df["석식수"] = summary_df["석식"].apply(
+                    lambda x: 1 if x == "Y" else int(x) if str(x).isdigit() else 0
+                )
+
+                group_summary = summary_df.groupby("구분")[["중식수", "석식수"]].sum().reset_index()
+                date_summary = summary_df.groupby("날짜")[["중식수", "석식수"]].sum().reset_index()
+
+                output = BytesIO()
+
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                    filtered_df.to_excel(writer, index=False, sheet_name="원본데이터")
+                    group_summary.to_excel(writer, index=False, sheet_name="구분별집계")
+                    date_summary.to_excel(writer, index=False, sheet_name="일자별집계")
+
+                output.seek(0)
+
+                file_name = f"식수집계_{start_date}_{end_date}.xlsx"
+
+                st.download_button(
+                    label="엑셀 다운로드",
+                    data=output,
+                    file_name=file_name,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
