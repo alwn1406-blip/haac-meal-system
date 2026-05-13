@@ -6,21 +6,24 @@ from datetime import datetime, date
 st.set_page_config(page_title="HAAC 현장 식수 신청 시스템", layout="wide")
 
 # =========================
-# 구글시트 연결
+# 구글시트 연결 (Streamlit Secrets 사용)
 # =========================
 scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds = Credentials.from_service_account_file(
-    "service_account.json",
+creds = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
     scopes=scope
 )
 
 client = gspread.authorize(creds)
 
-spreadsheet = client.open_by_key("14JzikRFubHFg7atCi3JYOqBbQOTQc7LC_jYKZ_sAxTU")
+spreadsheet = client.open_by_key(
+    "14JzikRFubHFg7atCi3JYOqBbQOTQc7LC_jYKZ_sAxTU"
+)
+
 sheet = spreadsheet.worksheet("식수결과")
 
 # =========================
@@ -145,43 +148,86 @@ people = employee_data[selected_group]
 col_all1, col_all2, col_blank = st.columns([1, 1, 4])
 
 with col_all1:
-    all_lunch = st.checkbox("중식 전체 선택", key=f"{selected_group}_all_lunch")
+    all_lunch = st.checkbox(
+        "중식 전체 선택",
+        key=f"{selected_group}_all_lunch"
+    )
 
 with col_all2:
-    all_dinner = st.checkbox("석식 전체 선택", key=f"{selected_group}_all_dinner")
+    all_dinner = st.checkbox(
+        "석식 전체 선택",
+        key=f"{selected_group}_all_dinner"
+    )
 
 h1, h2, h3, h4, h5 = st.columns([1.5, 1.5, 1.5, 1, 1])
 
 with h1:
-    st.markdown('<div class="header-row">소속</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="header-row">소속</div>',
+        unsafe_allow_html=True
+    )
+
 with h2:
-    st.markdown('<div class="header-row">직책</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="header-row">직책</div>',
+        unsafe_allow_html=True
+    )
+
 with h3:
-    st.markdown('<div class="header-row">이름</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="header-row">이름</div>',
+        unsafe_allow_html=True
+    )
+
 with h4:
-    st.markdown('<div class="header-row">중식</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="header-row">중식</div>',
+        unsafe_allow_html=True
+    )
+
 with h5:
-    st.markdown('<div class="header-row">석식</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="header-row">석식</div>',
+        unsafe_allow_html=True
+    )
 
 result_rows = []
 
 for idx, person in enumerate(people):
+
     c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1, 1])
 
     with c1:
-        st.markdown(f'<div class="data-row">{selected_group}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="data-row">{selected_group}</div>',
+            unsafe_allow_html=True
+        )
 
     with c2:
-        st.markdown(f'<div class="data-row">{person["직책"]}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="data-row">{person["직책"]}</div>',
+            unsafe_allow_html=True
+        )
 
     with c3:
-        st.markdown(f'<div class="data-row">{person["이름"]}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="data-row">{person["이름"]}</div>',
+            unsafe_allow_html=True
+        )
 
     with c4:
-        lunch = st.checkbox("", value=all_lunch, key=f"{selected_group}_{idx}_lunch")
+        lunch = st.checkbox(
+            "",
+            value=all_lunch,
+            key=f"{selected_group}_{idx}_lunch"
+        )
 
     with c5:
-        dinner = st.checkbox("", value=all_dinner, key=f"{selected_group}_{idx}_dinner")
+        dinner = st.checkbox(
+            "",
+            value=all_dinner,
+            key=f"{selected_group}_{idx}_dinner"
+        )
 
     if lunch or dinner:
         result_rows.append({
@@ -200,10 +246,13 @@ st.divider()
 # 제출 → 구글시트 저장
 # =========================
 if st.button("제출"):
+
     if not result_rows:
         st.error("체크된 인원이 없어.")
+
     else:
         for row in result_rows:
+
             sheet.append_row([
                 row["입력시간"],
                 row["날짜"],
