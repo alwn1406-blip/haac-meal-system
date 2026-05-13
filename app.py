@@ -64,6 +64,27 @@ h1, h2, h3 {
     font-weight: 600;
 }
 
+.mobile-card {
+    background-color: #1f222b;
+    padding: 14px;
+    border-radius: 12px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+    border: 1px solid #343946;
+}
+
+.mobile-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+}
+
+.mobile-info {
+    font-size: 14px;
+    color: #cbd5e1;
+    margin-top: 4px;
+}
+
 .stButton > button {
     width: 100%;
     height: 48px;
@@ -146,6 +167,12 @@ with col_date:
 with col_group:
     selected_group = st.selectbox("소속팀 선택", groups)
 
+view_mode = st.radio(
+    "화면 모드 선택",
+    ["PC", "모바일"],
+    horizontal=True
+)
+
 st.markdown(f"## 👥 {selected_group} 명단")
 
 people = employee_data[selected_group]
@@ -155,79 +182,127 @@ col_all1, col_all2, col_blank = st.columns([1, 1, 4])
 with col_all1:
     all_lunch = st.checkbox(
         "중식 전체 선택",
-        key=f"{selected_group}_all_lunch"
+        key=f"{view_mode}_{selected_group}_all_lunch"
     )
 
 with col_all2:
     all_dinner = st.checkbox(
         "석식 전체 선택",
-        key=f"{selected_group}_all_dinner"
+        key=f"{view_mode}_{selected_group}_all_dinner"
     )
-
-h1, h2, h3, h4, h5 = st.columns([1.5, 1.5, 1.5, 1, 1])
-
-with h1:
-    st.markdown('<div class="header-row">소속</div>', unsafe_allow_html=True)
-
-with h2:
-    st.markdown('<div class="header-row">직책</div>', unsafe_allow_html=True)
-
-with h3:
-    st.markdown('<div class="header-row">이름</div>', unsafe_allow_html=True)
-
-with h4:
-    st.markdown('<div class="header-row">중식</div>', unsafe_allow_html=True)
-
-with h5:
-    st.markdown('<div class="header-row">석식</div>', unsafe_allow_html=True)
 
 result_rows = []
 
-for idx, person in enumerate(people):
-    c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1, 1])
+# =========================
+# PC 화면
+# =========================
+if view_mode == "PC":
 
-    with c1:
+    h1, h2, h3, h4, h5 = st.columns([1.5, 1.5, 1.5, 1, 1])
+
+    with h1:
+        st.markdown('<div class="header-row">소속</div>', unsafe_allow_html=True)
+
+    with h2:
+        st.markdown('<div class="header-row">직책</div>', unsafe_allow_html=True)
+
+    with h3:
+        st.markdown('<div class="header-row">이름</div>', unsafe_allow_html=True)
+
+    with h4:
+        st.markdown('<div class="header-row">중식</div>', unsafe_allow_html=True)
+
+    with h5:
+        st.markdown('<div class="header-row">석식</div>', unsafe_allow_html=True)
+
+    for idx, person in enumerate(people):
+        c1, c2, c3, c4, c5 = st.columns([1.5, 1.5, 1.5, 1, 1])
+
+        with c1:
+            st.markdown(
+                f'<div class="data-row">{selected_group}</div>',
+                unsafe_allow_html=True
+            )
+
+        with c2:
+            st.markdown(
+                f'<div class="data-row">{person["직책"]}</div>',
+                unsafe_allow_html=True
+            )
+
+        with c3:
+            st.markdown(
+                f'<div class="data-row">{person["이름"]}</div>',
+                unsafe_allow_html=True
+            )
+
+        with c4:
+            lunch = st.checkbox(
+                "",
+                value=all_lunch,
+                key=f"pc_{selected_group}_{idx}_lunch"
+            )
+
+        with c5:
+            dinner = st.checkbox(
+                "",
+                value=all_dinner,
+                key=f"pc_{selected_group}_{idx}_dinner"
+            )
+
+        if lunch or dinner:
+            result_rows.append({
+                "입력시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "날짜": str(meal_date),
+                "구분": selected_group,
+                "이름": person["이름"],
+                "직책": person["직책"],
+                "중식": "Y" if lunch else "",
+                "석식": "Y" if dinner else "",
+            })
+
+# =========================
+# 모바일 화면
+# =========================
+else:
+    for idx, person in enumerate(people):
+
         st.markdown(
-            f'<div class="data-row">{selected_group}</div>',
+            f"""
+            <div class="mobile-card">
+                <div class="mobile-name">{person["이름"]}</div>
+                <div class="mobile-info">{selected_group} / {person["직책"]}</div>
+            </div>
+            """,
             unsafe_allow_html=True
         )
 
-    with c2:
-        st.markdown(
-            f'<div class="data-row">{person["직책"]}</div>',
-            unsafe_allow_html=True
-        )
+        col_m1, col_m2 = st.columns(2)
 
-    with c3:
-        st.markdown(
-            f'<div class="data-row">{person["이름"]}</div>',
-            unsafe_allow_html=True
-        )
+        with col_m1:
+            lunch = st.checkbox(
+                "중식",
+                value=all_lunch,
+                key=f"mobile_{selected_group}_{idx}_lunch"
+            )
 
-    with c4:
-        lunch = st.checkbox(
-            "",
-            value=all_lunch,
-            key=f"{selected_group}_{idx}_lunch"
-        )
+        with col_m2:
+            dinner = st.checkbox(
+                "석식",
+                value=all_dinner,
+                key=f"mobile_{selected_group}_{idx}_dinner"
+            )
 
-    with c5:
-        dinner = st.checkbox(
-            "",
-            value=all_dinner,
-            key=f"{selected_group}_{idx}_dinner"
-        )
-
-    if lunch or dinner:
-        result_rows.append({
-            "입력시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "날짜": str(meal_date),
-            "구분": selected_group,
-            "이름": person["이름"],
-            "직책": person["직책"],
-            "중식": "Y" if lunch else "",
-            "석식": "Y" if dinner else "",
-        })
+        if lunch or dinner:
+            result_rows.append({
+                "입력시간": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "날짜": str(meal_date),
+                "구분": selected_group,
+                "이름": person["이름"],
+                "직책": person["직책"],
+                "중식": "Y" if lunch else "",
+                "석식": "Y" if dinner else "",
+            })
 
 st.divider()
 
